@@ -29,32 +29,21 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         },
         {
           "name": "role",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "champion",
-            "analyst",
-            "finance",
-            "homologator",
-            "none"
-          ]
+          "selectValues": ["champion", "analyst", "finance", "homologator", "none"]
         }
       ],
       "indexes": [
@@ -114,19 +103,14 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [
@@ -156,10 +140,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": [
-            "open",
-            "closed"
-          ]
+          "selectValues": ["open", "closed"]
         },
         {
           "name": "t0",
@@ -178,24 +159,17 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
-      "indexes": [
-        "CREATE INDEX idx_competencies_created ON competencies (created DESC)"
-      ]
+      "indexes": ["CREATE INDEX idx_competencies_created ON competencies (created DESC)"]
     },
     {
       "name": "audit_logs",
@@ -219,12 +193,7 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": [
-            "read",
-            "create",
-            "update",
-            "delete"
-          ]
+          "selectValues": ["read", "create", "update", "delete"]
         },
         {
           "name": "collection_name",
@@ -255,28 +224,21 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": [
-            "allowed"
-          ]
+          "selectValues": ["allowed"]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate"
-          ]
+          "autodateTriggers": ["onCreate"]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": [
-            "onCreate",
-            "onUpdate"
-          ]
+          "autodateTriggers": ["onCreate", "onUpdate"]
         }
       ],
       "indexes": [
