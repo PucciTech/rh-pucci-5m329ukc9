@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-18T20:52:44.615Z",
+  "generatedAt": "2026-09-18T21:13:36.878Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
-        "create": "",
-        "update": "id = @request.auth.id",
-        "delete": "id = @request.auth.id"
+        "list": "@request.auth.role = 'champion' || id = @request.auth.id",
+        "view": "@request.auth.role = 'champion' || id = @request.auth.id",
+        "create": "@request.auth.role = 'champion'",
+        "update": "@request.auth.role = 'champion' || id = @request.auth.id",
+        "delete": "@request.auth.role = 'champion'"
       },
       "fields": [
         {
@@ -29,19 +29,259 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "champion",
+            "analyst",
+            "finance",
+            "homologator",
+            "none"
+          ]
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "sensitive_payroll",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst' || @request.auth.role = 'finance')",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst' || @request.auth.role = 'finance')",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst' || @request.auth.role = 'finance')",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'champion'"
+      },
+      "fields": [
+        {
+          "name": "subject",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "cpf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "salary_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pension_cents",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "bank_account",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pix_key",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sensitive_payroll_subject ON sensitive_payroll (subject)",
+        "CREATE INDEX idx_sensitive_payroll_created ON sensitive_payroll (created DESC)"
+      ]
+    },
+    {
+      "name": "competencies",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst' || @request.auth.role = 'finance' || @request.auth.role = 'homologator')",
+        "view": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst' || @request.auth.role = 'finance' || @request.auth.role = 'homologator')",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'champion' || @request.auth.role = 'analyst')",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'champion'"
+      },
+      "fields": [
+        {
+          "name": "label",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "open",
+            "closed"
+          ]
+        },
+        {
+          "name": "t0",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "t1",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_competencies_created ON competencies (created DESC)"
+      ]
+    },
+    {
+      "name": "audit_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.role = 'champion'",
+        "view": "@request.auth.id != '' && @request.auth.role = 'champion'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "actor_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "action",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "read",
+            "create",
+            "update",
+            "delete"
+          ]
+        },
+        {
+          "name": "collection_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "record_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "fields",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "occurred_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "outcome",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "allowed"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_audit_logs_occurred_at ON audit_logs (occurred_at DESC)",
+        "CREATE INDEX idx_audit_logs_actor ON audit_logs (actor_id, occurred_at DESC)"
       ]
     }
   ]
