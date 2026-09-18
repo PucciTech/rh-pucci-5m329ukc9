@@ -1,7 +1,8 @@
 onRecordEnrich((e) => {
-  const auth = e.auth
+  const requestInfo = e.requestInfo
+  const auth = requestInfo.auth
   const role = auth ? auth.getString('role') : ''
-  const actorId = auth ? auth.id : 'superuser'
+  const actorId = auth ? auth.id : requestInfo.hasSuperuserAuth() ? 'superuser' : 'anonymous'
   const allowedReadFields =
     role === 'analyst'
       ? ['subject', 'cpf', 'salary_cents', 'pension_cents']
