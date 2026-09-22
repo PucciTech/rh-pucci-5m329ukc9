@@ -73,6 +73,7 @@ const Index = () => {
   const [competencyLabel, setCompetencyLabel] = useState('Competência sintética da F1-T02')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [fixtureMessage, setFixtureMessage] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => subscribeToAuth(setUser), [])
@@ -114,6 +115,7 @@ const Index = () => {
 
   const handleCreateFixture = () =>
     void run(async () => {
+      setFixtureMessage('')
       const record = await createSensitivePayroll({
         subject: fixtureSubject.trim(),
         cpf: 'CPF-SINTETICO-UI',
@@ -124,6 +126,7 @@ const Index = () => {
       })
       setFixtureId(record.id)
       setSensitive(record)
+      setFixtureMessage('Fixture sintética criada. O ID foi preenchido para a próxima consulta.')
     }, 'Fixture sintética criada. O ID foi preenchido para a próxima consulta.')
 
   const handleLoadCompetencies = () =>
@@ -321,6 +324,13 @@ const Index = () => {
                   </Button>
                 )}
               </div>
+              {fixtureMessage && (
+                <Alert aria-live="polite">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Operação concluída</AlertTitle>
+                  <AlertDescription>{fixtureMessage}</AlertDescription>
+                </Alert>
+              )}
               {sensitive && (
                 <Table>
                   <TableHeader>
