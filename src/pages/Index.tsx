@@ -45,6 +45,7 @@ import {
   type SensitivePayrollRecord,
   type UserRecord,
 } from '@/services/security'
+import { runFlipchartConsulta, type FlipchartResponse } from '@/services/flipchart'
 import { runStelantoMirrorView, type StelantoMirrorResponse } from '@/services/stelanto'
 
 const SYNTHETIC_FIXTURE_ID = 'k96kzy7knhw5faq'
@@ -87,6 +88,9 @@ const Index = () => {
   const [stelantoStart, setStelantoStart] = useState('2026-08-01')
   const [stelantoEnd, setStelantoEnd] = useState('2026-08-31')
   const [stelantoResult, setStelantoResult] = useState<StelantoMirrorResponse | null>(null)
+  const [flipchartStart, setFlipchartStart] = useState('2026-08-01')
+  const [flipchartEnd, setFlipchartEnd] = useState('2026-08-31')
+  const [flipchartResult, setFlipchartResult] = useState<FlipchartResponse | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [fixtureMessage, setFixtureMessage] = useState('')
@@ -176,6 +180,12 @@ const Index = () => {
       const result = await runStelantoMirrorView(stelantoStart, stelantoEnd)
       setStelantoResult(result)
     }, 'Consulta read-only do Stelanto concluída. A resposta não foi persistida.')
+
+  const handleRunFlipchart = () =>
+    void run(async () => {
+      const result = await runFlipchartConsulta(flipchartStart, flipchartEnd)
+      setFlipchartResult(result)
+    }, 'Consulta read-only do Flipchart concluída. A resposta não foi persistida.')
 
   if (!isAuthenticated) {
     return (
@@ -391,6 +401,126 @@ const Index = () => {
                         <TableCell>{formatSeconds(row.summary?.totalWorked)}</TableCell>
                         <TableCell>{formatSeconds(row.summary?.extraTime)}</TableCell>
                         <TableCell>{formatSeconds(row.summary?.missingTime)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DatabaseZap className="h-5 w-5 text-emerald-600" />
+              Prova read-only do Flipchart
+            </CardTitle>
+            <CardDescription>
+              Consulta viagens e uso de veículos por colaborador. A chave fica no backend; a
+              resposta não é persistida no RH Pucci.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2 text-sm font-medium">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  Início
+                </span>
+                <Input
+                  type="date"
+                  value={flipchartStart}
+                  onChange={(event) => setFlipchartStart(event.target.value)}
+                />
+              </label>
+              <label className="block space-y-2 text-sm font-medium">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  Fim
+                </span>
+                <Input
+                  type="date"
+                  value={flipchartEnd}
+                  onChange={(event) => setFlipchartEnd(event.target.value)}
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={busy || !flipchartStart || !flipchartEnd || role !== 'champion'}
+                onClick={handleRunFlipchart}
+              >
+                {busy ? 'Consultando Flipchart…' : 'Executar prova read-only'}
+              </Button>
+              {flipchartResult && (
+                <Button onClick={() => setFlipchartResult(null)} variant="outline">
+                  Limpar resultado
+                </Button>
+              )}
+            </div>
+            {role !== 'champion' && (
+              <Alert>
+                <LockKeyhole className="h-4 w-4" />
+                <AlertTitle>Acesso restrito</AlertTitle>
+                <AlertDescription>
+                  Apenas a champion pode executar a prova técnica do Flipchart.
+                </AlertDescription>
+              </Alert>
+            )}
+            {flipchartResult && (
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Resposta read-only recebida</AlertTitle>
+                  <AlertDescription>
+                    {flipchartResult.rowCount} registro(s) retornado(s) no período. Nenhum dado foi
+                    salvo pelo RH Pucci.
+                  </AlertDescription>
+                </Alert>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Formato</p>
+                    <p className="mt-1 font-semibold">{flipchartResult.format}</p>
+                  </div>
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Via</p>
+                    <p className="mt-1 break-words font-mono text-xs">{flipchartResult.via}</p>
+                  </div>
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Granularidade</p>
+                    <p className="mt-1 text-sm font-semibold">{flipchartResult.granularity}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-white p-4">
+                  <p className="text-sm font-semibold">Campos e fontes comprovados</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {flipchartResult.fields.join(', ')}. Fontes:{' '}
+                    {flipchartResult.sourceValues.join(', ')}.
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Pessoa</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Veículo</TableHead>
+                      <TableHead>Projeto</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Origem</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {flipchartResult.rows.map((row, index) => (
+                      <TableRow key={`${row.source ?? 'row'}-${row.id ?? index}`}>
+                        <TableCell className="font-mono text-xs">{row.id ?? '—'}</TableCell>
+                        <TableCell>{row.pessoa ?? '—'}</TableCell>
+                        <TableCell>{row.data ?? '—'}</TableCell>
+                        <TableCell>{row.veiculo ?? '—'}</TableCell>
+                        <TableCell>{row.projeto ?? '—'}</TableCell>
+                        <TableCell>{row.status ?? '—'}</TableCell>
+                        <TableCell>{row.source ?? '—'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
