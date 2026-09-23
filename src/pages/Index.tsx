@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  CalendarDays,
   CheckCircle2,
   Clock3,
+  DatabaseZap,
   Eye,
   FileClock,
   KeyRound,
@@ -43,6 +45,7 @@ import {
   type SensitivePayrollRecord,
   type UserRecord,
 } from '@/services/security'
+import { runStelantoMirrorView, type StelantoMirrorResponse } from '@/services/stelanto'
 
 const SYNTHETIC_FIXTURE_ID = 'k96kzy7knhw5faq'
 
@@ -61,6 +64,16 @@ const formatCents = (value?: number) =>
     ? (value / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     : 'oculto'
 
+const formatSeconds = (value?: unknown) => {
+  const seconds = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(seconds)) return '—'
+  const sign = seconds < 0 ? '-' : ''
+  const absolute = Math.abs(Math.trunc(seconds))
+  const hours = Math.floor(absolute / 3600)
+  const minutes = Math.floor((absolute % 3600) / 60)
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
 const Index = () => {
   const [user, setUser] = useState<UserRecord | null>(() => getSessionUser())
   const [loginEmail, setLoginEmail] = useState('champion.f1t02@example.test')
@@ -71,6 +84,9 @@ const Index = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [fixtureSubject, setFixtureSubject] = useState('fixture-ui-f1-t02')
   const [competencyLabel, setCompetencyLabel] = useState('Competência sintética da F1-T02')
+  const [stelantoStart, setStelantoStart] = useState('2026-08-01')
+  const [stelantoEnd, setStelantoEnd] = useState('2026-08-31')
+  const [stelantoResult, setStelantoResult] = useState<StelantoMirrorResponse | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [fixtureMessage, setFixtureMessage] = useState('')
@@ -154,6 +170,12 @@ const Index = () => {
       const result = await listAuditLogs()
       setAuditLogs(result.items)
     }, 'Trilha carregada. Ela é somente leitura para a champion.')
+
+  const handleRunStelanto = () =>
+    void run(async () => {
+      const result = await runStelantoMirrorView(stelantoStart, stelantoEnd)
+      setStelantoResult(result)
+    }, 'Consulta read-only do Stelanto concluída. A resposta não foi persistida.')
 
   if (!isAuthenticated) {
     return (
@@ -251,6 +273,132 @@ const Index = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DatabaseZap className="h-5 w-5 text-blue-600" />
+              Prova read-only do Stelanto
+            </CardTitle>
+            <CardDescription>
+              Consulta o espelho JSON por período. O token fica no backend; a resposta não é
+              persistida no RH Pucci.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2 text-sm font-medium">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  Início
+                </span>
+                <Input
+                  type="date"
+                  value={stelantoStart}
+                  onChange={(event) => setStelantoStart(event.target.value)}
+                />
+              </label>
+              <label className="block space-y-2 text-sm font-medium">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                  Fim
+                </span>
+                <Input
+                  type="date"
+                  value={stelantoEnd}
+                  onChange={(event) => setStelantoEnd(event.target.value)}
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={busy || !stelantoStart || !stelantoEnd || role !== 'champion'}
+                onClick={handleRunStelanto}
+              >
+                {busy ? 'Consultando Stelanto…' : 'Executar prova read-only'}
+              </Button>
+              {stelantoResult && (
+                <Button onClick={() => setStelantoResult(null)} variant="outline">
+                  Limpar resultado
+                </Button>
+              )}
+            </div>
+            {role !== 'champion' && (
+              <Alert>
+                <LockKeyhole className="h-4 w-4" />
+                <AlertTitle>Acesso restrito</AlertTitle>
+                <AlertDescription>
+                  Apenas a champion pode executar a prova técnica do Stelanto.
+                </AlertDescription>
+              </Alert>
+            )}
+            {stelantoResult && (
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Resposta read-only recebida</AlertTitle>
+                  <AlertDescription>
+                    {stelantoResult.rowCount} colaborador(es) com dias registrados no período.
+                    Nenhum dado foi salvo pelo RH Pucci.
+                  </AlertDescription>
+                </Alert>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Formato</p>
+                    <p className="mt-1 font-semibold">{stelantoResult.format}</p>
+                  </div>
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Via</p>
+                    <p className="mt-1 break-words font-mono text-xs">{stelantoResult.via}</p>
+                  </div>
+                  <div className="rounded-lg border bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Granularidade</p>
+                    <p className="mt-1 text-sm font-semibold">{stelantoResult.granularity}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-white p-4">
+                  <p className="text-sm font-semibold">Campos e unidades comprovados</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Resumo: {stelantoResult.fields.root.join(', ')}. Dia:{' '}
+                    {stelantoResult.fields.workDay.join(', ')}. Batida:{' '}
+                    {stelantoResult.fields.timeEntry.join(', ')}. Duração em{' '}
+                    {stelantoResult.fields.summaryTimeUnit}; horário da batida em{' '}
+                    {stelantoResult.fields.beatTime}.
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead>Dias</TableHead>
+                      <TableHead>Batidas</TableHead>
+                      <TableHead>Trabalhado</TableHead>
+                      <TableHead>Extra</TableHead>
+                      <TableHead>Faltante</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stelantoResult.rows.map((row, index) => (
+                      <TableRow key={`${row.user?.name ?? 'row'}-${index}`}>
+                        <TableCell>{row.user?.name ?? '—'}</TableCell>
+                        <TableCell>{row.workDays?.length ?? 0}</TableCell>
+                        <TableCell>
+                          {row.workDays?.reduce(
+                            (total, day) => total + (day.timeEntries?.length ?? 0),
+                            0,
+                          ) ?? 0}
+                        </TableCell>
+                        <TableCell>{formatSeconds(row.summary?.totalWorked)}</TableCell>
+                        <TableCell>{formatSeconds(row.summary?.extraTime)}</TableCell>
+                        <TableCell>{formatSeconds(row.summary?.missingTime)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <section className="grid gap-4 md:grid-cols-3">
           <Card>
