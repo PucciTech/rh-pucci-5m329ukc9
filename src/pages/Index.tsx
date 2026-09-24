@@ -85,6 +85,7 @@ const Index = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [fixtureSubject, setFixtureSubject] = useState('fixture-ui-f1-t02')
   const [competencyLabel, setCompetencyLabel] = useState('Competência sintética da F1-T02')
+  const [touchTimeByCompetency, setTouchTimeByCompetency] = useState<Record<string, string>>({})
   const [stelantoStart, setStelantoStart] = useState('2026-08-01')
   const [stelantoEnd, setStelantoEnd] = useState('2026-08-31')
   const [stelantoResult, setStelantoResult] = useState<StelantoMirrorResponse | null>(null)
@@ -162,12 +163,26 @@ const Index = () => {
       setCompetencies(result.items)
     }, 'Competência aberta; o backend registrou t0.')
 
-  const handleCloseCompetency = (id: string) =>
+  const handleCloseCompetency = (id: string) => {
+    const rawValue = touchTimeByCompetency[id]?.trim() ?? ''
+    const touchTimeMinutes = Number(rawValue)
+    if (
+      !rawValue ||
+      !Number.isFinite(touchTimeMinutes) ||
+      !Number.isInteger(touchTimeMinutes) ||
+      touchTimeMinutes <= 0
+    ) {
+      setMessage('')
+      setError('Informe o touch time efetivo em minutos, usando um número inteiro maior que zero.')
+      return
+    }
+
     void run(async () => {
-      await closeCompetency(id)
+      await closeCompetency(id, touchTimeMinutes)
       const result = await listCompetencies()
       setCompetencies(result.items)
-    }, 'Competência encerrada; o backend registrou t1.')
+    }, 'Competência encerrada; o backend registrou t1 e o touch time.')
+  }
 
   const handleLoadAudit = () =>
     void run(async () => {
@@ -656,7 +671,8 @@ const Index = () => {
               </CardTitle>
               <CardDescription>
                 O backend define t0 ao abrir e t1 ao encerrar; o cliente não consegue sobrescrever
-                os horários.
+                os horários. Informe o touch time como minutos efetivamente trabalhados. O lead time
+                total é calculado como t1 − t0.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -682,6 +698,8 @@ const Index = () => {
                     <TableHead>Status</TableHead>
                     <TableHead>t0</TableHead>
                     <TableHead>t1</TableHead>
+                    <TableHead>Touch time</TableHead>
+                    <TableHead>Lead time</TableHead>
                     {canOperateCompetency && <TableHead>Ação</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -696,6 +714,46 @@ const Index = () => {
                       </TableCell>
                       <TableCell>{formatDate(competency.t0)}</TableCell>
                       <TableCell>{formatDate(competency.t1)}</TableCell>
+                      <TableCell>
+                        {competency.status === 'closed' ? (
+                          formatMinutes(competency.touch_time_minutes)
+                        ) : canOperateCompetency ? (
+                          <label className="block space-y-1">
+                            <span className="sr-only">
+                              Touch time em minutos para {competency.label}
+                            </span>
+                            <Input
+                              aria-label={`Touch time em minutos para ${competency.label}`}
+                              className="w-28"
+                              disabled={busy}
+                              inputMode="numeric"
+                              min="1"
+                              onChange={(event) =>
+                                setTouchTimeByCompetency((current) => ({
+                                  ...current,
+                                  [competency.id]: event.target.value,
+                                }))
+                              }
+                              placeholder="minutos"
+                              step="1"
+                              type="number"
+                              value={touchTimeByCompetency[competency.id] ?? ''}
+                            />
+                          </label>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {competency.status === 'closed'
+                          ? (() => {
+                              const elapsedMinutes = getElapsedMinutes(competency.t0, competency.t1)
+                              return elapsedMinutes === null
+                                ? 'inconsistente'
+                                : formatMinutes(elapsedMinutes)
+                            })()
+                          : 'em andamento'}
+                      </TableCell>
                       {canOperateCompetency && (
                         <TableCell>
                           {competency.status === 'open' && (

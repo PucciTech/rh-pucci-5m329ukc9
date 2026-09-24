@@ -24,6 +24,7 @@ export type CompetencyRecord = RecordModel & {
   status: 'open' | 'closed'
   t0: string
   t1?: string
+  touch_time_minutes?: number | null
 }
 
 export type AuditLog = RecordModel & {
@@ -69,8 +70,11 @@ export const listCompetencies = () =>
 export const createCompetency = (label: string) =>
   pb.collection<CompetencyRecord>('competencies').create({ label, status: 'open' })
 
-export const closeCompetency = (id: string) =>
-  pb.collection<CompetencyRecord>('competencies').update(id, { status: 'closed' })
+export const closeCompetency = (id: string, touchTimeMinutes: number) =>
+  pb.collection<CompetencyRecord>('competencies').update(id, {
+    status: 'closed',
+    touch_time_minutes: touchTimeMinutes,
+  })
 
 export const listAuditLogs = () =>
   pb.collection<AuditLog>('audit_logs').getList(1, 50, { sort: '-occurred_at' })
