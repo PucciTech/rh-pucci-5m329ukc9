@@ -75,6 +75,27 @@ const formatSeconds = (value?: unknown) => {
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
+const formatMinutes = (value?: number | null) => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return '—'
+  const minutes = Math.trunc(value)
+  const days = Math.floor(minutes / 1440)
+  const hours = Math.floor((minutes % 1440) / 60)
+  const remainder = minutes % 60
+  const parts = []
+  if (days) parts.push(`${days}d`)
+  if (hours) parts.push(`${hours}h`)
+  if (remainder || parts.length === 0) parts.push(`${remainder}min`)
+  return parts.join(' ')
+}
+
+const getElapsedMinutes = (t0?: string, t1?: string) => {
+  if (!t0 || !t1) return null
+  const start = new Date(t0).getTime()
+  const end = new Date(t1).getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null
+  return Math.round((end - start) / 60000)
+}
+
 const Index = () => {
   const [user, setUser] = useState<UserRecord | null>(() => getSessionUser())
   const [loginEmail, setLoginEmail] = useState('champion.f1t02@example.test')
